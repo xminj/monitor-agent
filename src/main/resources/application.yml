@@ -1,0 +1,30 @@
+micronaut:
+  application:
+    name: monitor-agent
+  server:
+    port: 8086
+
+datasources:
+  default:
+    url: jdbc:h2:file:./data/monitor_agent;AUTO_SERVER=TRUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+    dialect: H2
+    schema-generate: CREATE
+    hikari:
+      maximum-pool-size: 5
+
+logging:
+  level:
+    com.xminj.monitor: DEBUG
+    io.micronaut.data: DEBUG
+
+
+
+# 项目自身配置
+monitor:
+  agent:
+    scheduler:
+      # 采集时间
+      collection-interval-seconds: 5
