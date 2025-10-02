@@ -47,12 +47,6 @@
             <scope>compile</scope>
         </dependency>
 
-        <!-- 数据库 -->
-        <!--<dependency>
-            <groupId>io.micronaut.data</groupId>
-            <artifactId>micronaut-data-processor</artifactId>
-        </dependency>-->
-
         <dependency>
             <groupId>io.micronaut.data</groupId>
             <artifactId>micronaut-data-jdbc</artifactId>
