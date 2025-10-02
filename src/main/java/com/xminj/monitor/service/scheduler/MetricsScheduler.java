@@ -7,6 +7,7 @@ import com.xminj.monitor.repository.HealthReportRepository;
 import com.xminj.monitor.service.metrics.CpuMetrics;
 import com.xminj.monitor.util.JsonUtil;
 import io.micronaut.context.event.StartupEvent;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.runtime.event.annotation.EventListener;
 import io.micronaut.scheduling.TaskScheduler;
 import jakarta.inject.Inject;
@@ -133,13 +134,16 @@ public class MetricsScheduler {
         safeCollect("网络指标采集", () -> {
             List<Network> networks = new ArrayList<>();
             for (NetworkIF networkIF : hardware.getNetworkIFs()) {
-                Network network = new Network();
-                network.setNetworkInterface(networkIF.getName());
-                network.setiPv4addr(Arrays.toString(networkIF.getIPv4addr()));
-                network.setNetworkRecv(networkIF.getBytesRecv());
-                network.setNetworkSent(networkIF.getBytesSent());
+                String ipv4Addr = Arrays.toString(networkIF.getIPv4addr()).replaceAll("[\\[\\]]","");
 
-                networks.add(network);
+                if (StringUtils.hasText(ipv4Addr)) {
+                    Network network = new Network();
+                    network.setNetworkInterface(networkIF.getName());
+                    network.setiPv4addr(ipv4Addr);
+                    network.setNetworkRecv(networkIF.getBytesRecv());
+                    network.setNetworkSent(networkIF.getBytesSent());
+                    networks.add(network);
+                }
             }
             report.setNetwork(JsonUtil.toJsonString(networks));
         });
@@ -148,7 +152,6 @@ public class MetricsScheduler {
             healthReportRepository.save(report);
             log.info("采集数据写库成功 {}", JsonUtil.toJsonString(report));
         } catch (Exception e) {
-            e.printStackTrace();
             log.error("保存采集数据出错： {}  , {}", JsonUtil.toJsonString(report), e.getMessage());
         }
 
