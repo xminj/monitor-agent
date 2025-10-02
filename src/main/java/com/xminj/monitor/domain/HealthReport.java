@@ -8,7 +8,7 @@ import io.micronaut.data.annotation.MappedProperty;
 import io.micronaut.data.model.DataType;
 
 @Introspected
-@MappedEntity("agent_health_reports")
+@MappedEntity("agent_health_report")
 public class HealthReport {
     @Id
     @GeneratedValue
@@ -21,16 +21,23 @@ public class HealthReport {
     private Long timestamp;
 
     /**
-     * 主机信息
+     * 主机制造商
      */
-    @MappedProperty("host_name")
-    private String hostname;
+    @MappedProperty("system_manufacturer")
+    private String systemManufacturer;
 
     /**
-     * 系统
+     * 主机型号
      */
-    @MappedProperty("os_name")
-    private String osName;
+    @MappedProperty("system_mode")
+    private String systemMode;
+
+
+    /**
+     * 主机序列号
+     */
+    @MappedProperty("serial_number")
+    private String serialNumber;
 
 
     /**
@@ -101,14 +108,6 @@ public class HealthReport {
         this.diskUsed = diskUsed;
     }
 
-    public String getHostname() {
-        return hostname;
-    }
-
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
     public Long getId() {
         return id;
     }
@@ -141,12 +140,28 @@ public class HealthReport {
         this.network = network;
     }
 
-    public String getOsName() {
-        return osName;
+    public String getSerialNumber() {
+        return serialNumber;
     }
 
-    public void setOsName(String osName) {
-        this.osName = osName;
+    public void setSerialNumber(String serialNumber) {
+        this.serialNumber = serialNumber;
+    }
+
+    public String getSystemManufacturer() {
+        return systemManufacturer;
+    }
+
+    public void setSystemManufacturer(String systemManufacturer) {
+        this.systemManufacturer = systemManufacturer;
+    }
+
+    public String getSystemMode() {
+        return systemMode;
+    }
+
+    public void setSystemMode(String systemMode) {
+        this.systemMode = systemMode;
     }
 
     public Long getTimestamp() {
