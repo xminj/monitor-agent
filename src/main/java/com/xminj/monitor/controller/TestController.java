@@ -1,7 +1,7 @@
 package com.xminj.monitor.controller;
 
-import com.xminj.monitor.domain.HealthReport;
-import com.xminj.monitor.service.HealthReportService;
+import com.xminj.monitor.domain.HardwareMetrics;
+import com.xminj.monitor.service.HardwareMetricsService;
 import com.xminj.monitor.service.scheduler.MetricsScheduler;
 import com.xminj.monitor.util.JsonUtil;
 import io.micronaut.http.annotation.Controller;
@@ -16,12 +16,12 @@ public class TestController {
     @Inject
     private MetricsScheduler metricsScheduler;
     @Inject
-    private HealthReportService healthReportService;
+    private HardwareMetricsService hardwareMetricsService;
 
     @Get("/queryAll")
     public String queryAll() {
-        List<HealthReport> healthReports = healthReportService.queryAll();
-        return JsonUtil.toJsonString(healthReports);
+        List<HardwareMetrics> hardwareMetrics = hardwareMetricsService.queryAll();
+        return JsonUtil.toJsonString(hardwareMetrics);
     }
 
     @Get("/updateCollectionInterval/{seconds}")

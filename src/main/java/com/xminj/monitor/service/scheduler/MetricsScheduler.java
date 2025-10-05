@@ -1,9 +1,9 @@
 package com.xminj.monitor.service.scheduler;
 
 import com.xminj.monitor.config.MonitorAgentProperties;
-import com.xminj.monitor.domain.HealthReport;
+import com.xminj.monitor.domain.HardwareMetrics;
 import com.xminj.monitor.domain.Network;
-import com.xminj.monitor.repository.HealthReportRepository;
+import com.xminj.monitor.repository.HardwareMetricsRepository;
 import com.xminj.monitor.service.metrics.CpuMetrics;
 import com.xminj.monitor.util.JsonUtil;
 import io.micronaut.context.event.StartupEvent;
@@ -15,7 +15,6 @@ import io.micronaut.data.model.Pageable;
 import io.micronaut.runtime.event.annotation.EventListener;
 import io.micronaut.scheduling.TaskScheduler;
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +44,8 @@ public class MetricsScheduler {
     private final AtomicReference<ScheduledFuture<?>> metricsTask = new AtomicReference<>();
     // 数据上报任务
     private final AtomicReference<ScheduledFuture<?>> uploadTask = new AtomicReference<>();
+    // 历史数据删除任务
+    private final AtomicReference<ScheduledFuture<?>> deleteTask = new AtomicReference<>();
 
     // 硬件指标采集相关
     private volatile SystemInfo systemInfo;
@@ -57,7 +58,7 @@ public class MetricsScheduler {
     @Inject
     private MonitorAgentProperties monitorAgentProperties;
     @Inject
-    private HealthReportRepository healthReportRepository;
+    private HardwareMetricsRepository hardwareMetricsRepository;
 
     @EventListener
     @Order(Integer.MAX_VALUE - 1)
@@ -66,11 +67,16 @@ public class MetricsScheduler {
         this.hardware = systemInfo.getHardware();
         this.os = systemInfo.getOperatingSystem();
         CpuMetrics.setPervTicks(hardware.getProcessor());
-        scheduleCollectionTask();
+
+        scheduleCollectionSchedule();
         uploadMetricsSchedule();
     }
 
-
+    /**
+     * 动态修改执行时间间隔
+     *
+     * @param seconds 时间间隔  秒
+     */
     public void updateUploadedInterval(Long seconds) {
         log.info("== 修改定时上报时间间隔: {}", seconds);
         monitorAgentProperties.setUploadedIntervalSeconds(seconds);
@@ -86,7 +92,7 @@ public class MetricsScheduler {
     public void updateCollectionInterval(Long seconds) {
         log.info("== 修改定时采集硬件指标时间为：{}秒", seconds);
         monitorAgentProperties.setCollectionIntervalSeconds(seconds);
-        scheduleCollectionTask();
+        scheduleCollectionSchedule();
     }
 
 
@@ -110,7 +116,7 @@ public class MetricsScheduler {
     /**
      * 动态采集硬件指标
      */
-    private void scheduleCollectionTask() {
+    private void scheduleCollectionSchedule() {
         ScheduledFuture<?> oldTask = metricsTask.getAndSet(null);
         if (Objects.nonNull(oldTask)) {
             log.info("== 取消历史的采集硬件指标任务");
@@ -134,22 +140,22 @@ public class MetricsScheduler {
         int pageSize = 100;
         for (; ; ) {
             Pageable pageable = Pageable.from(page, pageSize);
-            Page<HealthReport> reportPage = healthReportRepository.pageReportData(pageable);
-            List<HealthReport> content = reportPage.getContent();
+            Page<HardwareMetrics> reportPage = hardwareMetricsRepository.pageReportData(pageable);
+            List<HardwareMetrics> content = reportPage.getContent();
             if (CollectionUtils.isEmpty(content)) {
                 log.debug("没有需要上报的数据");
                 return;
             }
             // TODO 上报服务端
             ComputerSystem computerSystem = hardware.getComputerSystem();
-            log.info("主机厂商： {}  主机型号： {}   主机序列号： {}",computerSystem.getManufacturer(),computerSystem.getModel(),computerSystem.getSerialNumber());
+            log.info("主机厂商： {}  主机型号： {}   主机序列号： {}", computerSystem.getManufacturer(), computerSystem.getModel(), computerSystem.getSerialNumber());
 
             log.info("{}", JsonUtil.toJsonString(content));
             List<Long> ids = content.stream()
-                    .map(HealthReport::getId)
+                    .map(HardwareMetrics::getId)
                     .toList();
 
-            int updatedCount = healthReportRepository.markAsUploadedByIds(ids);
+            int updatedCount = hardwareMetricsRepository.markAsUploadedByIds(ids);
             log.info("成功标记 {} 条记录为已上传", updatedCount);
             if (content.size() < pageSize) {
                 return;
@@ -160,7 +166,7 @@ public class MetricsScheduler {
 
 
     private void collectAndStoreLocally() {
-        HealthReport report = new HealthReport();
+        HardwareMetrics report = new HardwareMetrics();
 
         safeCollect("系统基本信息采集", () -> {
             ComputerSystem computerSystem = hardware.getComputerSystem();
@@ -213,7 +219,7 @@ public class MetricsScheduler {
         });
 
         try {
-            healthReportRepository.save(report);
+            hardwareMetricsRepository.save(report);
             log.info("采集数据写库成功 {}", JsonUtil.toJsonString(report));
         } catch (Exception e) {
             log.error("保存采集数据出错： {}  , {}", JsonUtil.toJsonString(report), e.getMessage());
@@ -224,7 +230,7 @@ public class MetricsScheduler {
 
     private void safeCollect(String metricName, Runnable collector) {
         try {
-            log.debug(metricName);
+            log.debug("开始 {} 的收集", metricName);
             collector.run();
         } catch (Exception e) {
             log.error("采集 {} 指标失败, message:  {}", metricName, e.getMessage());

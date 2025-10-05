@@ -8,8 +8,8 @@ import io.micronaut.data.annotation.MappedProperty;
 import io.micronaut.data.model.DataType;
 
 @Introspected
-@MappedEntity("agent_health_report")
-public class HealthReport {
+@MappedEntity("hardware_metrics")
+public class HardwareMetrics {
     @Id
     @GeneratedValue
     private Long id;

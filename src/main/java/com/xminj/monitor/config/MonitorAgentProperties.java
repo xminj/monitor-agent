@@ -17,7 +17,27 @@ public class MonitorAgentProperties {
      */
     private String uploadedUrl;
 
+    /**
+     * 数据上报时间间隔
+     */
     private Long uploadedIntervalSeconds = 5L;
+
+
+    /**
+     * corn 默认每天晚上一点执行
+     */
+    private String dataCleanCron = "0 0 1 * * ?";
+
+
+
+    public String getDataCleanCron() {
+        return dataCleanCron;
+    }
+
+    public void setDataCleanCron(String dataCleanCron) {
+        this.dataCleanCron = dataCleanCron;
+    }
+
 
     public String getUploadedUrl() {
         return uploadedUrl;
